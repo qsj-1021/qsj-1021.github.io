@@ -1,2 +1,337 @@
-# qsj-1021.github.io
-我的HTML网页
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>给好友的祝福</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <!-- 配置Tailwind自定义主题 - 粉色系 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#f472b6',
+            secondary: '#fb7185',
+            accent: '#ffe4e6',
+            neutral: '#fff5f7',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .text-shadow {
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .animate-float {
+        animation: float 3s ease-in-out infinite;
+      }
+      .animate-pulse-slow {
+        animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      .animate-popup {
+        animation: popup 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+      }
+      .animate-fadeout {
+        animation: fadeout 0.5s ease-out forwards;
+      }
+      .single-line {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    
+    @keyframes popup {
+      0% { transform: scale(0.7); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    @keyframes fadeout {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(0.8); opacity: 0; }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-pink-50 to-purple-50 min-h-screen font-sans m-0 p-0 overflow-hidden">
+  <!-- 背景遮罩 -->
+  <div id="overlay" class="fixed inset-0 bg-black/20 z-40 opacity-0 transition-opacity duration-500 pointer-events-none"></div>
+  
+  <!-- 主容器 - 用于放置所有弹出窗口 -->
+  <div id="modalsContainer" class="fixed inset-0 z-50 pointer-events-none overflow-hidden"></div>
+  
+  <!-- 开始按钮 -->
+  <div class="min-h-screen flex items-center justify-center z-10 relative">
+    <button id="startBtn" class="px-8 py-4 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg hover:shadow-xl transition-all text-lg font-medium">
+      <i class="fa fa-heart mr-2"></i>开始接收祝福
+    </button>
+  </div>
+
+  <script>
+    // 在这里设置好友的名字（只在代码中设置，不在界面显示）
+    const friendName = "亲爱的妈妈";
+    
+    // 祝福语句数组（共115条，{name}会自动替换为好友名字，每条适合单行显示）
+    const blessings = [
+      // 原有15条
+      "不管遇到什么困难，{name}，我永远支持你。",
+      "最近还好吗？{name}，十分想念你。",
+      "生活有起伏，{name}，我会一直为你加油！",
+      "累了就休息，{name}，照顾好自己最重要。",
+      "你开心我就开心，{name}，随时找我倾诉。",
+      "愿你每天充满阳光，{name}，笑容像星星。",
+      "人生旅途，{name}，有我陪你看风景真好。",
+      "距离再远，{name}，我们友谊永不褪色。",
+      "愿你睡好、吃好，{name}，做喜欢的事。",
+      "遇到挫折别灰心，{name}，你比想象中坚强。",
+      "天气转凉，{name}，记得添衣保暖。",
+      "有你的日子更精彩，{name}，感谢有你。",
+      "保持乐观，{name}，爱笑的人运气好。",
+      "疲惫了就歇一歇，{name}，我等你重新出发。",
+      "愿你每天有阳光微风，{name}，一切刚好。",
+      
+      // 新增100条
+      "{name}，今天也要元气满满呀！",
+      "看到好看的风景，就想起{name}你了。",
+      "{name}，记得多喝水，照顾好自己。",
+      "不管怎样，{name}，你在我心里最棒。",
+      "{name}，今天也要给自己一个微笑哦。",
+      "想起我们一起的时光，{name}，很开心。",
+      "{name}，别给自己太多压力，慢慢来。",
+      "生活再忙，{name}，也要记得休息呀。",
+      "{name}，你的努力我都看在眼里呢。",
+      "遇到好事要分享，{name}，我随时听着。",
+      "{name}，希望你今天也有小确幸。",
+      "不管过去怎样，{name}，未来更值得期待。",
+      "{name}，你笑起来的样子真好看。",
+      "难过的时候，{name}，记得我在你身边。",
+      "{name}，今天也要好好吃饭哦。",
+      "你的梦想一定会实现，{name}，我相信。",
+      "{name}，偶尔偷懒也没关系呀。",
+      "天气真好，{name}，适合出去走走。",
+      "{name}，你总是那么温暖善良。",
+      "遇到选择别纠结，{name}，跟着心走。",
+      "{name}，记得给自己一点奖励呀。",
+      "再坚持一下，{name}，马上就会有收获。",
+      "{name}，你的存在本身就很有意义。",
+      "累了就告诉我，{name}，我陪你。",
+      "{name}，今天的你也很努力呀。",
+      "别和自己较劲，{name}，你已经很好了。",
+      "{name}，希望你每天都睡得香甜。",
+      "想到你就很开心，{name}，真的。",
+      "{name}，偶尔放慢脚步也没关系。",
+      "你的付出都会有回报，{name}，相信我。",
+      "{name}，今天也要穿得暖暖的。",
+      "不管别人怎么说，{name}，我支持你。",
+      "{name}，记得做喜欢的事放松自己。",
+      "遇到困难别独自扛，{name}，还有我。",
+      "{name}，你的笑容能治愈一切呢。",
+      "生活有点苦，但{name}你是甜的。",
+      "{name}，今天也要对自己好一点。",
+      "想起我们的约定，{name}，很期待呢。",
+      "{name}，你总是那么有毅力。",
+      "累了就歇一歇，{name}，我等你。",
+      "{name}，希望你每天都有好心情。",
+      "你的努力不会白费，{name}，加油。",
+      "{name}，记得多吃点水果呀。",
+      "不管距离多远，{name}，心一直在一起。",
+      "{name}，你是我很重要的人。",
+      "遇到烦心事，{name}，说出来会好受些。",
+      "{name}，今天也要勇敢做自己。",
+      "看到你进步，{name}，真为你开心。",
+      "{name}，偶尔任性一下也没关系。",
+      "天气冷了，{name}，注意保暖哦。",
+      "{name}，你的善良会有回报的。",
+      "别给自己设限，{name}，你能做到更多。",
+      "{name}，记得给自己留些空闲时间。",
+      "不管结果如何，{name}，你已经很棒了。",
+      "{name}，今天也要元气满满地出发。",
+      "想起你的笑声，{name}，我也跟着开心。",
+      "{name}，别太在意别人的看法。",
+      "遇到美好的事物，{name}，要好好感受。",
+      "{name}，你的坚持让我很佩服。",
+      "累了就好好休息，{name}，别硬撑。",
+      "{name}，希望你每天都有新发现。",
+      "你的梦想很美好，{name}，一定会实现。",
+      "{name}，记得常和我分享你的生活。",
+      "遇到挑战别退缩，{name}，你能行。",
+      "{name}，你身上有很多闪光点呢。",
+      "生活再平淡，{name}，有你就不一样。",
+      "{name}，今天也要记得微笑呀。",
+      "你的努力我都知道，{name}，辛苦了。",
+      "{name}，偶尔放纵一下也没关系。",
+      "天气热了，{name}，注意防暑哦。",
+      "{name}，你总是那么贴心温暖。",
+      "别给自己太大压力，{name}，尽力就好。",
+      "{name}，记得多和朋友联系呀。",
+      "看到你开心，{name}，我也很满足。",
+      "{name}，你的存在让世界更美好。",
+      "遇到困难别害怕，{name}，我陪着你。",
+      "{name}，今天也要好好照顾自己。",
+      "你的坚持终将美好，{name}，相信自己。",
+      "{name}，记得给自己一点鼓励呀。",
+      "不管过去怎样，{name}，未来可期。",
+      "{name}，你笑起来像阳光一样温暖。",
+      "难过的时候，{name}，我一直在。",
+      "{name}，今天也要好好吃饭休息。",
+      "你的努力会有回报，{name}，加油呀。",
+      "{name}，偶尔偷懒也是一种智慧。",
+      "天气真好，{name}，出去晒晒太阳吧。",
+      "{name}，你总是那么正能量满满。",
+      "遇到选择别犹豫，{name}，相信直觉。",
+      "{name}，记得奖励努力的自己。",
+      "再坚持一下，{name}，胜利就在眼前。",
+      "{name}，你的存在对我很重要。",
+      "累了就告诉我，{name}，我听你说。",
+      "{name}，今天的你也很棒哦。",
+      "别和自己过不去，{name}，你已经很好。",
+      "{name}，希望你夜夜都有好梦。",
+      "想到你就很安心，{name}，真的。",
+      "{name}，偶尔放慢节奏也不错。",
+      "你的付出会被看见，{name}，相信我。",
+      "{name}，今天也要穿得美美的。",
+      "不管别人怎么看，{name}，我挺你。",
+      "{name}，记得做让自己开心的事。",
+      "遇到困难别硬扛，{name}，有我呢。",
+      "{name}，你的笑容有治愈力哦。",
+      "生活有点苦，但{name}你是甜味剂。",
+      "{name}，今天也要对自己温柔点。",
+      "想起我们的约定，{name}，很期待实现。",
+      "{name}，你真的很有毅力呢。"
+    ];
+    
+    // 获取DOM元素
+    const overlay = document.getElementById('overlay');
+    const modalsContainer = document.getElementById('modalsContainer');
+    const startBtn = document.getElementById('startBtn');
+    
+    let currentIndex = 0;
+    let isAutoPlaying = false;
+    let autoPlayInterval;
+    
+    // 显示背景遮罩
+    function showOverlay() {
+      overlay.classList.remove('opacity-0', 'pointer-events-none');
+      overlay.classList.add('opacity-100', 'pointer-events-auto');
+      document.body.style.overflow = 'hidden';
+    }
+    
+    // 隐藏背景遮罩
+    function hideOverlay() {
+      overlay.classList.remove('opacity-100', 'pointer-events-auto');
+      overlay.classList.add('opacity-0', 'pointer-events-none');
+      document.body.style.overflow = '';
+    }
+    
+    // 创建并显示一个祝福弹窗
+    function showBlessingModal() {
+      if (currentIndex >= blessings.length) {
+        // 所有祝福显示完毕
+        stopAutoPlay();
+        // 保留全屏效果，不隐藏遮罩
+        startBtn.textContent = "再次查看祝福";
+        startBtn.classList.remove('hidden');
+        startBtn.style.zIndex = "60"; // 确保按钮在最上层
+        currentIndex = 0;
+        return;
+      }
+      
+      createNewModal();
+      
+      // 自动播放下一个
+      if (isAutoPlaying) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = setInterval(() => {
+          currentIndex++;
+          showBlessingModal();
+        }, 100); // 0.1秒间隔
+      }
+    }
+    
+    // 创建新的弹窗
+    function createNewModal() {
+      // 替换祝福中的名字
+      const blessingText = blessings[currentIndex].replace('{name}', friendName);
+      
+      // 创建弹窗元素
+      const modal = document.createElement('div');
+      modal.className = 'absolute bg-white rounded-xl shadow-lg p-3 max-w-xs w-auto transform opacity-0 pointer-events-auto animate-popup';
+      
+      // 随机位置，确保全屏分布
+      const maxX = window.innerWidth - 200;
+      const maxY = window.innerHeight - 80;
+      const randomX = Math.floor(Math.random() * maxX);
+      const randomY = Math.floor(Math.random() * maxY);
+      
+      modal.style.left = `${randomX}px`;
+      modal.style.top = `${randomY}px`;
+      
+      // 弹窗内容 - 单行显示
+      modal.innerHTML = `
+        <div class="text-center flex items-center gap-2">
+          <i class="fa fa-heart text-primary text-sm animate-pulse-slow"></i>
+          <p class="text-gray-700 text-sm single-line px-2">${blessingText}</p>
+        </div>
+        <div class="h-1 mt-2 bg-gradient-to-r from-primary to-secondary rounded-full"></div>
+      `;
+      
+      // 添加到容器
+      modalsContainer.appendChild(modal);
+      
+      // 点击弹窗可关闭单个
+      modal.addEventListener('click', () => {
+        modal.classList.add('animate-fadeout');
+        setTimeout(() => modal.remove(), 500);
+      });
+    }
+    
+    // 开始自动播放
+    function startAutoPlay() {
+      isAutoPlaying = true;
+      startBtn.classList.add('hidden');
+      showOverlay();
+      // 清空容器
+      modalsContainer.innerHTML = '';
+      currentIndex = 0;
+      showBlessingModal();
+    }
+    
+    // 停止自动播放
+    function stopAutoPlay() {
+      isAutoPlaying = false;
+      clearInterval(autoPlayInterval);
+    }
+    
+    // 事件监听
+    startBtn.addEventListener('click', startAutoPlay);
+    
+    // 键盘ESC关闭所有弹窗
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        stopAutoPlay();
+        modalsContainer.innerHTML = '';
+        hideOverlay();
+        startBtn.textContent = "再次查看祝福";
+        startBtn.classList.remove('hidden');
+        currentIndex = 0;
+      }
+    });
+  </script>
+</body>
+</html>
